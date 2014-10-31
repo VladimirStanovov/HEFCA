@@ -1,4 +1,6 @@
 #include <iostream>
+#include <random_numbers.h>
+#include <sample.cpp>
 
 using namespace std;
 
