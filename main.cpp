@@ -8,6 +8,10 @@ int main()
 {
   cout << "Hello World!" << endl;
   cout << "I'm trying to use GitHub"<<endl;
+
+  sample S(150,4,3);
+  S.ReadFileClassification((char*)"iris_.txt");
+  S.ShowSampleClassification();
   return 0;
 }
 
