@@ -127,12 +127,18 @@ void sample::ShowSampleRegression()
   {
       for(int j=0;j!=NVars;j++)
       {
-          cout<<Inputs[i][j]<<"\t";
+          if(MissingInputs[i][j])
+            cout<<"?\t";
+          else
+            cout<<Inputs[i][j]<<"\t";
       }
       cout<<"->\t";
       for(int j=0;j!=NOuts;j++)
       {
-          cout<<Outputs[i][j]<<"\t";
+          if(MissingOutputs[i][j])
+            cout<<"?\t";
+          else
+            cout<<Outputs[i][j]<<"\t";
       }
       cout<<endl;
   }
@@ -143,7 +149,10 @@ void sample::ShowSampleClassification()
   {
       for(int j=0;j!=NVars;j++)
       {
-          cout<<Inputs[i][j]<<"\t";
+          if(MissingInputs[i][j])
+            cout<<"?\t";
+          else
+            cout<<Inputs[i][j]<<"\t";
       }
       cout<<"->\t";
       cout<<Classes[i]<<endl;
