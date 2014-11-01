@@ -1,20 +1,26 @@
 #include "sample.h"
 
-sample::sample()
+sample::sample(int NewSize, int NewNCols, int NewNVars, int NewNClasses)
 {
+  Size = NewSize;
+  NCols = NewNCols;
+  NClasses = NewNClasses;
+  NVars = NewNVars;
+  NOuts = 1;
+
+}
+sample::sample(int NewSize, int NewNCols, int NewNVars, int NewNOuts)
+{
+  Size = NewSize;
+  NCols = NewNCols;
+  NVars = NewNVars;
+  NOuts = NewNOuts;
+
 }
 sample::~sample()
 {
 }
-void sample::ReadFileClassification(char* filename, int NewSize, int NewNCols,
-                                    int NewNVars, int NewNOuts)
+void sample::ReadFileClassification(char* filename)
 {
    std::ifstream fin(filename);
-   Size = NewSize;
-   NCols = NewNCols;
-   ProblemType = 0;
-   NVars = NewNVars;
-   NOuts = NewNOuts;
-
-
 }
