@@ -1,12 +1,16 @@
 #include "sample.h"
 
-sample::sample(int NewSize, int NewNVars, int NewNClasses)
+sample::sample(int NewSize, int NewNVars, int NewNClasses, int NewNFolds, double NewSplitRate)
 {
   Size = NewSize;
   NClasses = NewNClasses;
   NVars = NewNVars;
   ProblemType = 0;  //классификация
+  NFolds = NewNFolds;
+  SplitRate = NewSplitRate;
 
+  CVSplit = new int[Size];
+  NClassInst = new int[NClasses];
   Classes = new int[Size];
   Inputs = new double*[Size];
   MissingInputs = new bool*[Size];
@@ -19,16 +23,18 @@ sample::sample(int NewSize, int NewNVars, int NewNClasses)
         MissingInputs[i][j] = false;
     }
   }
-
 }
-sample::sample(int NewSize, int NewNCols, int NewNVars, int NewNOuts)
+sample::sample(int NewSize, int NewNCols, int NewNVars, int NewNOuts, int NewNFolds, double NewSplitRate)
 {
   Size = NewSize;
   NCols = NewNCols;
   NVars = NewNVars;
   NOuts = NewNOuts;
   ProblemType = 1;  //регрессия
+  NFolds = NewNFolds;
+  SplitRate = NewSplitRate;
 
+  CVSplit = new int[Size];
   Inputs = new double*[Size];
   Outputs = new double*[Size];
   MissingInputs = new bool*[Size];
@@ -51,6 +57,7 @@ sample::sample(int NewSize, int NewNCols, int NewNVars, int NewNOuts)
 }
 sample::~sample()
 {
+  delete CVSplit;
   for(int i=0;i!=Size;i++)
   {
     delete Inputs[i];
@@ -63,7 +70,10 @@ sample::~sample()
       delete MissingOutputs[i];
     }
   if(ProblemType == 0)
+  {
     delete Classes;
+    delete NClassInst;
+  }
 }
 void sample::ReadFileClassification(char* filename)
 {
@@ -157,4 +167,16 @@ void sample::ShowSampleClassification()
       cout<<"->\t";
       cout<<Classes[i]<<endl;
   }
+}
+double sample::GetValue(int Num,int Var)
+{
+  return Inputs[Num][Var];
+}
+double sample::GetOutput(int Num,int Var)
+{
+  return Outputs[Num][Var];
+}
+int sample::GetClass(int Num)
+{
+  return Classes[Num];
 }
