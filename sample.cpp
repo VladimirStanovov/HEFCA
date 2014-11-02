@@ -10,6 +10,8 @@ sample::sample(int NewSize, int NewNVars, int NewNClasses, int NewNFolds,
   NFolds = NewNFolds;
   SplitRate = NewSplitRate;
 
+  ClassPerFold = new int*[NClasses];
+  ClassPositions = new int*[NClasses];
   CVFoldNum = new int[Size];
   FoldSize = new int[NFolds];
   CVSplit = new int[Size];
@@ -25,6 +27,11 @@ sample::sample(int NewSize, int NewNVars, int NewNClasses, int NewNFolds,
     {
         MissingInputs[i][j] = false;
     }
+  }
+  for(int i=0;i!=NClasses;i++)
+  {
+      ClassPositions[i] = new int[Size];
+      ClassPerFold[i] = new int[NFolds];
   }
 }
 sample::sample(int NewSize, int NewNCols, int NewNVars, int NewNOuts,
@@ -80,6 +87,13 @@ sample::~sample()
   {
     delete Classes;
     delete NClassInst;
+    for(int i=0;i!=NClasses;i++)
+    {
+      delete ClassPositions[i];
+      delete ClassPerFold[i];
+    }
+    delete ClassPositions;
+    delete ClassPerFold;
   }
 }
 void sample::ReadFileClassification(char* filename)
@@ -189,7 +203,34 @@ int sample::GetClass(int Num)
 }
 void sample::SplitCVStratified()
 {
+  int counter=0;
+  int RandomPattern;
+  for(int i=0;i!=Size;i++)
+  {
+    CVFoldNum[i] = -1;
+  }
+  for(int i=0;i!=NFolds;i++)
+  {
+      for(int j=0;j!=NClasses;j++)
+      {
+          for(int k=0;k!=ClassPerFold[j][i];k++)
+          {
+              while(counter < (int) ((double)i+1.0)*(double)Size/(double)NFolds )
+              {
+                RandomPattern = IntRandom(NClassInst[j]);
+                while(CVFoldNum[ClassPositions[j][RandomPattern]] != -1)
+                {
+                  RandomPattern++;
+                  if(RandomPattern == NClassInst[j])
+                    RandomPattern=0;
+                }
 
+                CVFoldNum[ClassPositions[j][RandomPattern]] = i;
+                counter++;
+              }
+          }
+      }
+  }
 }
 void sample::SplitCVRandom()
 {
@@ -214,5 +255,103 @@ void sample::SplitCVRandom()
       CVFoldNum[RandomPattern] = i;
       counter++;
     }
+  }
+}
+void sample::ClassPatternsCalc()
+{
+  for(int i=0;i!=NClasses;i++)
+  {
+      NClassInst[i] = 0;
+  }
+  for(int i=0;i!=Size;i++)
+  {
+      NClassInst[GetClass(i)]++;
+  }
+  for(int i=0;i!=NClasses;i++)
+  {
+      int counter = 0;
+      for(int j=0;j!=Size;j++)
+      {
+          if(GetClass(j) == i)
+          {
+              ClassPositions[i][counter] = j;
+              counter++;
+          }
+      }
+      counter = 0;
+      for(int j=0;j!=NFolds;j++)
+      {
+          ClassPerFold[i][j] = 0;
+          while(counter < int( ((double)j+1.0)*(double)NClassInst[i]/(double)NFolds ) )
+          {
+              ClassPerFold[i][j] ++;
+              counter++;
+          }
+      }
+  }
+}
+void sample::SplitRandom()
+{
+  int RandomPattern;
+  for(int i=0;i!=Size;i++)
+  {
+    CVFoldNum[i] = -1;  //используется здесь как индикатор
+                        //использования измерения
+  }
+  LearnSize = int(SplitRate*(double)Size);
+  TestSize = Size-LearnSize;
+  for(int i=0;i!=LearnSize;i++)
+  {
+    RandomPattern = IntRandom(LearnSize);
+    while(CVFoldNum[RandomPattern] != -1)
+    {
+      RandomPattern++;
+      if(RandomPattern == LearnSize)
+        RandomPattern=0;
+    }
+    CVFoldNum[RandomPattern] = 0;
+  }
+  for(int i=0;i!=TestSize;i++)
+  {
+    RandomPattern = IntRandom(TestSize);
+    while(CVFoldNum[RandomPattern] != -1)
+    {
+      RandomPattern++;
+      if(RandomPattern == TestSize)
+        RandomPattern=0;
+    }
+    CVFoldNum[RandomPattern] = 1;
+  }
+}
+void sample::SplitStratified()
+{
+  int counter=0;
+  int RandomPattern;
+  for(int i=0;i!=Size;i++)
+  {
+    CVFoldNum[i] = -1;  //используется здесь как индикатор
+                        //использования измерения
+  }
+  for(int i=0;i!=NClasses;i++)
+  {
+    for(int j=0;j!=round(SplitRate*NClassInst[i]);j++)
+    {
+      RandomPattern = IntRandom(NClassInst[j]);
+      while(CVFoldNum[ClassPositions[j][RandomPattern]] != -1)
+      {
+        RandomPattern++;
+        if(RandomPattern == NClassInst[j])
+          RandomPattern=0;
+      }
+      CVFoldNum[ClassPositions[j][RandomPattern]] = 0;
+      counter++;
+    }
+  }
+  LearnSize = counter;
+  TestSize = Size-LearnSize;
+  for(int i=0;i!=Size;i++)
+  {
+    if(CVFoldNum[i] == -1)
+      CVFoldNum[i] = 1;
   }
 }
