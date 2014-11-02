@@ -10,9 +10,11 @@ class sample
 {
 public:
   //конструктор для задач регрессии
-  sample(int NewSize, int NewNCols, int NewNVars, int NewNOuts, int NewNFolds, double NewSplitRate);
+  sample(int NewSize, int NewNCols, int NewNVars, int NewNOuts,
+         int NewNFolds, double NewSplitRate);
   //конструктор для задач классификации
-  sample(int NewSize, int NewNVars, int NewNClasses, int NewNFolds, double NewSplitRate);
+  sample(int NewSize, int NewNVars, int NewNClasses, int NewNFolds,
+         double NewSplitRate);
   ~sample();
   // первичное считывание с файла
   void ReadFileClassification(char* filename);
@@ -26,6 +28,9 @@ public:
   double GetOutput(int Num,int Var);
   // получить номер класса для измерения
   int GetClass(int Num);
+  // разбиение выборки, кросс-валидация
+  void SplitCVRandom();
+  void SplitCVStratified();
   // общие параметры
   int Size;         //объем выборки
   int NCols;        //общее число столбцов в выборке
@@ -42,6 +47,9 @@ public:
   bool** MissingOutputs;   //массив пропущенных входных значений
   int* CVSplit;     //определяет к какой части относится
                     //измерение при кросс-валидации
+  int* FoldSize;    //размеры частей, на которые разбивается
+                    //выборка при кросс-валидации
+  int* CVFoldNum;   //номер, фолда, к которому относится измерение
 
   // параметры для задач классификации
   int NClasses;     //число классов в задаче

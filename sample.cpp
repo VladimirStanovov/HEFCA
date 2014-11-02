@@ -1,6 +1,7 @@
 #include "sample.h"
 
-sample::sample(int NewSize, int NewNVars, int NewNClasses, int NewNFolds, double NewSplitRate)
+sample::sample(int NewSize, int NewNVars, int NewNClasses, int NewNFolds,
+               double NewSplitRate)
 {
   Size = NewSize;
   NClasses = NewNClasses;
@@ -9,6 +10,8 @@ sample::sample(int NewSize, int NewNVars, int NewNClasses, int NewNFolds, double
   NFolds = NewNFolds;
   SplitRate = NewSplitRate;
 
+  CVFoldNum = new int[Size];
+  FoldSize = new int[NFolds];
   CVSplit = new int[Size];
   NClassInst = new int[NClasses];
   Classes = new int[Size];
@@ -24,7 +27,8 @@ sample::sample(int NewSize, int NewNVars, int NewNClasses, int NewNFolds, double
     }
   }
 }
-sample::sample(int NewSize, int NewNCols, int NewNVars, int NewNOuts, int NewNFolds, double NewSplitRate)
+sample::sample(int NewSize, int NewNCols, int NewNVars, int NewNOuts,
+               int NewNFolds, double NewSplitRate)
 {
   Size = NewSize;
   NCols = NewNCols;
@@ -34,6 +38,8 @@ sample::sample(int NewSize, int NewNCols, int NewNVars, int NewNOuts, int NewNFo
   NFolds = NewNFolds;
   SplitRate = NewSplitRate;
 
+  CVFoldNum = new int[Size];
+  FoldSize = new int[NFolds];
   CVSplit = new int[Size];
   Inputs = new double*[Size];
   Outputs = new double*[Size];
@@ -57,6 +63,7 @@ sample::sample(int NewSize, int NewNCols, int NewNVars, int NewNOuts, int NewNFo
 }
 sample::~sample()
 {
+  delete FoldSize;
   delete CVSplit;
   for(int i=0;i!=Size;i++)
   {
@@ -179,4 +186,33 @@ double sample::GetOutput(int Num,int Var)
 int sample::GetClass(int Num)
 {
   return Classes[Num];
+}
+void sample::SplitCVStratified()
+{
+
+}
+void sample::SplitCVRandom()
+{
+  int counter=0;
+  int RandomPattern;
+  for(int i=0;i!=Size;i++)
+  {
+    CVFoldNum[i] = -1;
+  }
+  for(int i=0;i!=NFolds;i++)
+  {
+    while(counter < (int) ((double)i+1.0)*(double)Size/(double)NFolds )
+    {
+      RandomPattern = IntRandom(Size);
+      while(CVFoldNum[RandomPattern] != -1) //Если измерение уже взято в
+      {                                     //одну из выборок, то увеличиваем
+        RandomPattern++;                    //номер, пока не найдем не взятое
+        if(RandomPattern == Size)           //таким образом избегаем смещения
+          RandomPattern=0;                  //если достигли конца, начинаем
+      }                                     //сначала.
+
+      CVFoldNum[RandomPattern] = i;
+      counter++;
+    }
+  }
 }
