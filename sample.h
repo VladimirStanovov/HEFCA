@@ -17,6 +17,13 @@ public:
   sample(int NewSize, int NewNVars, int NewNClasses, int NewNFolds,
          double NewSplitRate);
   ~sample();
+  //задание значений в выборке
+  void SetValue(int Num, int Var, double value);
+  void SetOut(int Num, int Out, double value);
+  void SetClass(int Num, int Class);
+  //задание положений пропущенных значений
+  void SetMissingInput(int Num, int Var);
+  void SetMissingOutput(int Num, int Out);
   //первичное считывание с файла
   void ReadFileClassification(char* filename);
   void ReadFileRegression(char* filename);
@@ -37,6 +44,22 @@ public:
   //простое разбиение выборки
   void SplitRandom();
   void SplitStratified();
+  //возвращает объем обучающей выборки для кросс-валидации
+  int GetCVLearnSize(int FoldOnTest);
+  //возвращает объем тестовой выборки для кросс-валидации
+  int GetCVTestSize(int FoldOnTest);
+  //возвращает объем обучающей выборки
+  int GetLearnSize();
+  //возвращает объем тестовой выборки
+  int GetTestSize();
+  //Задать обучающую выборку, кросс-валидация
+  void SetCVLearn(sample &S_CVLearn, int FoldOnTest);
+  //Задать тестовую выборку, кросс-валидация
+  void SetCVTest(sample &S_CVTest, int FoldOnTest);
+  //Задать обучающую выборку
+  void SetLearn(sample& S_Learn);
+  //Задать тестовую выборку
+  void SetTest(sample& S_Test);
   //общие параметры
   int Size;         //объем выборки
   int NCols;        //общее число столбцов в выборке
@@ -53,8 +76,6 @@ public:
   double** Outputs; //выходы задачи
   bool** MissingInputs;    //массив пропущенных входных значений
   bool** MissingOutputs;   //массив пропущенных выходных значений
-  int* CVSplit;     //определяет к какой части относится
-                    //измерение при кросс-валидации
   int* FoldSize;    //размеры частей, на которые разбивается
                     //выборка при кросс-валидации
   int* CVFoldNum;   //номер части, к которой относится измерение

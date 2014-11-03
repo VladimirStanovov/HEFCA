@@ -14,7 +14,6 @@ sample::sample(int NewSize, int NewNVars, int NewNClasses, int NewNFolds,
   ClassPositions = new int*[NClasses];
   CVFoldNum = new int[Size];
   FoldSize = new int[NFolds];
-  CVSplit = new int[Size];
   NClassInst = new int[NClasses];
   Classes = new int[Size];
   Inputs = new double*[Size];
@@ -47,7 +46,6 @@ sample::sample(int NewSize, int NewNCols, int NewNVars, int NewNOuts,
 
   CVFoldNum = new int[Size];
   FoldSize = new int[NFolds];
-  CVSplit = new int[Size];
   Inputs = new double*[Size];
   Outputs = new double*[Size];
   MissingInputs = new bool*[Size];
@@ -71,11 +69,10 @@ sample::sample(int NewSize, int NewNCols, int NewNVars, int NewNOuts,
 sample::~sample()
 {
   delete FoldSize;
-  delete CVSplit;
   for(int i=0;i!=Size;i++)
   {
     delete Inputs[i];
-    delete MissingInputs[i];
+    //delete MissingInputs[i];
   }
   if(ProblemType == 1)
     for(int i=0;i!=Size;i++)
@@ -152,10 +149,31 @@ void sample::ReadFileRegression(char* filename)
        }
    }
 }
+void sample::SetValue(int Num, int Var, double value)
+{
+  Inputs[Num][Var] = value;
+}
+void sample::SetOut(int Num, int Out, double value)
+{
+  Outputs[Num][Out] = value;
+}
+void sample::SetClass(int Num, int Class)
+{
+  Classes[Num] = Class;
+}
+void sample::SetMissingInput(int Num, int Var)
+{
+  MissingInputs[Num][Var] = true;
+}
+void sample::SetMissingOutput(int Num, int Out)
+{
+  MissingOutputs[Num][Out] = true;
+}
 void sample::ShowSampleRegression()
 {
   for(int i=0;i!=Size;i++)
   {
+      cout<<i<<":\t";
       for(int j=0;j!=NVars;j++)
       {
           if(MissingInputs[i][j])
@@ -178,6 +196,7 @@ void sample::ShowSampleClassification()
 {
   for(int i=0;i!=Size;i++)
   {
+      cout<<i<<":\t";
       for(int j=0;j!=NVars;j++)
       {
           if(MissingInputs[i][j])
@@ -203,7 +222,6 @@ int sample::GetClass(int Num)
 }
 void sample::SplitCVStratified()
 {
-  int counter=0;
   int RandomPattern;
   for(int i=0;i!=Size;i++)
   {
@@ -211,23 +229,20 @@ void sample::SplitCVStratified()
   }
   for(int i=0;i!=NFolds;i++)
   {
+      FoldSize[i] = 0;
       for(int j=0;j!=NClasses;j++)
       {
-          for(int k=0;k!=ClassPerFold[j][i];k++)
-          {
-              while(counter < (int) ((double)i+1.0)*(double)Size/(double)NFolds )
-              {
-                RandomPattern = IntRandom(NClassInst[j]);
-                while(CVFoldNum[ClassPositions[j][RandomPattern]] != -1)
-                {
-                  RandomPattern++;
-                  if(RandomPattern == NClassInst[j])
-                    RandomPattern=0;
-                }
-
-                CVFoldNum[ClassPositions[j][RandomPattern]] = i;
-                counter++;
-              }
+         for(int k=0;k!=ClassPerFold[j][i];k++)
+         {
+            RandomPattern = IntRandom(NClassInst[j]);
+            while(CVFoldNum[ClassPositions[j][RandomPattern]] != -1)
+            {
+              RandomPattern++;
+              if(RandomPattern == NClassInst[j])
+                RandomPattern=0;
+            }
+            CVFoldNum[ClassPositions[j][RandomPattern]] = i;
+            FoldSize[i]++;
           }
       }
   }
@@ -242,6 +257,7 @@ void sample::SplitCVRandom()
   }
   for(int i=0;i!=NFolds;i++)
   {
+    FoldSize[i] = 0;
     while(counter < (int) ((double)i+1.0)*(double)Size/(double)NFolds )
     {
       RandomPattern = IntRandom(Size);
@@ -254,6 +270,7 @@ void sample::SplitCVRandom()
 
       CVFoldNum[RandomPattern] = i;
       counter++;
+      FoldSize[i]++;
     }
   }
 }
@@ -302,22 +319,22 @@ void sample::SplitRandom()
   TestSize = Size-LearnSize;
   for(int i=0;i!=LearnSize;i++)
   {
-    RandomPattern = IntRandom(LearnSize);
+    RandomPattern = IntRandom(Size);
     while(CVFoldNum[RandomPattern] != -1)
     {
       RandomPattern++;
-      if(RandomPattern == LearnSize)
+      if(RandomPattern == Size)
         RandomPattern=0;
     }
     CVFoldNum[RandomPattern] = 0;
   }
   for(int i=0;i!=TestSize;i++)
   {
-    RandomPattern = IntRandom(TestSize);
+    RandomPattern = IntRandom(Size);
     while(CVFoldNum[RandomPattern] != -1)
     {
       RandomPattern++;
-      if(RandomPattern == TestSize)
+      if(RandomPattern == Size)
         RandomPattern=0;
     }
     CVFoldNum[RandomPattern] = 1;
@@ -336,14 +353,14 @@ void sample::SplitStratified()
   {
     for(int j=0;j!=round(SplitRate*NClassInst[i]);j++)
     {
-      RandomPattern = IntRandom(NClassInst[j]);
-      while(CVFoldNum[ClassPositions[j][RandomPattern]] != -1)
+      RandomPattern = IntRandom(NClassInst[i]);
+      while(CVFoldNum[ClassPositions[i][RandomPattern]] != -1)
       {
         RandomPattern++;
-        if(RandomPattern == NClassInst[j])
+        if(RandomPattern == NClassInst[i])
           RandomPattern=0;
       }
-      CVFoldNum[ClassPositions[j][RandomPattern]] = 0;
+      CVFoldNum[ClassPositions[i][RandomPattern]] = 0;
       counter++;
     }
   }
@@ -353,5 +370,148 @@ void sample::SplitStratified()
   {
     if(CVFoldNum[i] == -1)
       CVFoldNum[i] = 1;
+  }
+}
+int sample::GetTestSize()
+{
+  return TestSize;
+}
+int sample::GetLearnSize()
+{
+  return LearnSize;
+}
+int sample::GetCVLearnSize(int FoldOnTest)
+{
+  LearnSize=0;
+  for(int i=0;i!=NFolds;i++)
+  {
+    if(i != FoldOnTest)
+      LearnSize += FoldSize[i];
+  }
+  return LearnSize;
+}
+int sample::GetCVTestSize(int FoldOnTest)
+{
+  TestSize=FoldSize[FoldOnTest];
+  return TestSize;
+}
+void sample::SetCVLearn(sample &S_CVLearn, int FoldOnTest)
+{
+  int counter=0;
+  for(int i=0;i!=Size;i++)
+  {
+    if(CVFoldNum[i] != FoldOnTest)
+    {
+      for(int j=0;j!=NVars;j++)
+      {
+        S_CVLearn.SetValue(counter,j,GetValue(i,j));
+        if(MissingInputs[i][j])
+          S_CVLearn.SetMissingInput(counter,j);
+      }
+      if(ProblemType == 0)
+      {
+        S_CVLearn.SetClass(counter,GetClass(i));
+      }
+      else
+      {
+        for(int j=0;j!=NOuts;j++)
+        {
+          S_CVLearn.SetOut(counter,j,GetOutput(i,j));
+          if(MissingOutputs[i][j])
+            S_CVLearn.SetMissingOutput(counter,j);
+        }
+      }
+      counter++;
+    }
+  }
+}
+void sample::SetCVTest(sample &S_CVTest, int FoldOnTest)
+{
+  int counter=0;
+  for(int i=0;i!=Size;i++)
+  {
+    if(CVFoldNum[i] == FoldOnTest)
+    {
+      for(int j=0;j!=NVars;j++)
+      {
+        S_CVTest.SetValue(counter,j,GetValue(i,j));
+        if(MissingInputs[i][j])
+          S_CVTest.SetMissingInput(counter,j);
+      }
+      if(ProblemType == 0)
+      {
+        S_CVTest.SetClass(counter,GetClass(i));
+      }
+      else
+      {
+        for(int j=0;j!=NOuts;j++)
+        {
+          S_CVTest.SetOut(counter,j,GetOutput(i,j));
+          if(MissingOutputs[i][j])
+            S_CVTest.SetMissingOutput(counter,j);
+        }
+      }
+      counter++;
+    }
+  }
+}
+void sample::SetLearn(sample& S_Learn)
+{
+  int counter=0;
+  for(int i=0;i!=Size;i++)
+  {
+    if(CVFoldNum[i] == 0)
+    {
+      for(int j=0;j!=NVars;j++)
+      {
+        S_Learn.SetValue(counter,j,GetValue(i,j));
+        if(MissingInputs[i][j])
+          S_Learn.SetMissingInput(counter,j);
+      }
+      if(ProblemType == 0)
+      {
+        S_Learn.SetClass(counter,GetClass(i));
+      }
+      else
+      {
+        for(int j=0;j!=NOuts;j++)
+        {
+          S_Learn.SetOut(counter,j,GetOutput(i,j));
+          if(MissingOutputs[i][j])
+            S_Learn.SetMissingOutput(counter,j);
+        }
+      }
+      counter++;
+    }
+  }
+}
+void sample::SetTest(sample& S_Test)
+{
+  int counter=0;
+  for(int i=0;i!=Size;i++)
+  {
+    if(CVFoldNum[i] == 1)
+    {
+      for(int j=0;j!=NVars;j++)
+      {
+        S_Test.SetValue(counter,j,GetValue(i,j));
+        if(MissingInputs[i][j])
+          S_Test.SetMissingInput(counter,j);
+      }
+      if(ProblemType == 0)
+      {
+        S_Test.SetClass(counter,GetClass(i));
+      }
+      else
+      {
+        for(int j=0;j!=NOuts;j++)
+        {
+          S_Test.SetOut(counter,j,GetOutput(i,j));
+          if(MissingOutputs[i][j])
+            S_Test.SetMissingOutput(counter,j);
+        }
+      }
+      counter++;
+    }
   }
 }
