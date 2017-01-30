@@ -67,3 +67,25 @@
 	<time.h>
 	<stdlib.h>
 
+1473600967 source:c:\codeblocks_projects\hefca_bigdata_3\hefca\main.cpp
+	"main.h"
+
+1473600415 c:\codeblocks_projects\hefca_bigdata_3\hefca\main.h
+	"sample.cpp"
+	<conio.h>
+
+1473600611 c:\codeblocks_projects\hefca_bigdata_3\hefca\sample.cpp
+	"sample.h"
+	<conio.h>
+
+1473600669 c:\codeblocks_projects\hefca_bigdata_3\hefca\sample.h
+	"random_numbers.h"
+	<iostream>
+	<fstream>
+	<string.h>
+	<math.h>
+
+1485764364 c:\codeblocks_projects\hefca_bigdata_3\hefca\random_numbers.h
+	<time.h>
+	<stdlib.h>
+

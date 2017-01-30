@@ -1,92 +1,116 @@
-#ifndef SAMPLE_H
-#define SAMPLE_H
-
+#include "random_numbers.h"
+#include <iostream>
 #include <fstream>
 #include <string.h>
 #include <math.h>
 
-using namespace std;
-
 class sample
 {
 public:
-  //РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ РґР»СЏ Р·Р°РґР°С‡ СЂРµРіСЂРµСЃСЃРёРё
-  sample(int NewSize, int NewNCols, int NewNVars, int NewNOuts,
-         int NewNFolds, double NewSplitRate);
-  //РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ РґР»СЏ Р·Р°РґР°С‡ РєР»Р°СЃСЃРёС„РёРєР°С†РёРё
-  sample(int NewSize, int NewNVars, int NewNClasses, int NewNFolds,
-         double NewSplitRate);
+  //конструктор для задач классификации
+  sample();
   ~sample();
-  //Р·Р°РґР°РЅРёРµ Р·РЅР°С‡РµРЅРёР№ РІ РІС‹Р±РѕСЂРєРµ
-  void SetValue(int Num, int Var, double value);
-  void SetOut(int Num, int Out, double value);
+  void Init(int NewSize, int NewNVars, int NewNClasses, int NewNFolds,
+         float NewSplitRate);
+  void CleanSamp();
+  //задание значений в выборке
+  void SetValue(int Num, int Var, float value);
+  void SetNormValue(int Num, int Var, float value);
+  void SetOut(int Num, int Out, float value);
   void SetClass(int Num, int Class);
-  //Р·Р°РґР°РЅРёРµ РїРѕР»РѕР¶РµРЅРёР№ РїСЂРѕРїСѓС‰РµРЅРЅС‹С… Р·РЅР°С‡РµРЅРёР№
+  //задание положений пропущенных значений
   void SetMissingInput(int Num, int Var);
   void SetMissingOutput(int Num, int Out);
-  //РїРµСЂРІРёС‡РЅРѕРµ СЃС‡РёС‚С‹РІР°РЅРёРµ СЃ С„Р°Р№Р»Р°
+  //первичное считывание с файла
   void ReadFileClassification(char* filename);
   void ReadFileRegression(char* filename);
-  //РІС‹РІРѕРґ РЅР° СЌРєСЂР°РЅ РІСЃРµР№ РІС‹Р±РѕСЂРєРё
+  //вывод на экран всей выборки
   void ShowSampleClassification();
+  void ShowNormSampleClassification();
   void ShowSampleRegression();
-  //РІР·СЏС‚СЊ Р·РЅР°С‡РµРЅРёРµ РїРµСЂРµРјРµРЅРЅРѕР№ РёР· РІС‹Р±РѕСЂРєРё
-  double GetValue(int Num,int Var);
-  //РІР·СЏС‚СЊ Р·РЅР°С‡РµРЅРёРµ РІС‹С…РѕРґР° РёР· РІС‹Р±РѕСЂРєРё
-  double GetOutput(int Num,int Var);
-  //РїРѕР»СѓС‡РёС‚СЊ РЅРѕРјРµСЂ РєР»Р°СЃСЃР° РґР»СЏ РёР·РјРµСЂРµРЅРёСЏ
+  //взять значение переменной из выборки
+  float GetValue(int Num,int Var);
+  //взять значение переменной из выборки
+  float GetNormValue(int Num,int Var);
+  //взять значение выхода из выборки
+  float GetOutput(int Num,int Var);
+  //получить номер класса для измерения
   int GetClass(int Num);
-  //СЂР°Р·Р±РёРµРЅРёРµ РІС‹Р±РѕСЂРєРё, РєСЂРѕСЃСЃ-РІР°Р»РёРґР°С†РёСЏ
+  //разбиение выборки, кросс-валидация
   void SplitCVRandom();
   void SplitCVStratified();
-  //СЃС‡РёС‚Р°РµС‚ С‡РёСЃР»Рѕ РѕР±СЉРµРєС‚РѕРІ РїРѕ РєР»Р°СЃСЃР°Рј
+  //считает число объектов по классам
   void ClassPatternsCalc();
-  //РїСЂРѕСЃС‚РѕРµ СЂР°Р·Р±РёРµРЅРёРµ РІС‹Р±РѕСЂРєРё
+  //простое разбиение выборки
   void SplitRandom();
   void SplitStratified();
-  //РІРѕР·РІСЂР°С‰Р°РµС‚ РѕР±СЉРµРј РѕР±СѓС‡Р°СЋС‰РµР№ РІС‹Р±РѕСЂРєРё РґР»СЏ РєСЂРѕСЃСЃ-РІР°Р»РёРґР°С†РёРё
+  //возвращает объем обучающей выборки для кросс-валидации
   int GetCVLearnSize(int FoldOnTest);
-  //РІРѕР·РІСЂР°С‰Р°РµС‚ РѕР±СЉРµРј С‚РµСЃС‚РѕРІРѕР№ РІС‹Р±РѕСЂРєРё РґР»СЏ РєСЂРѕСЃСЃ-РІР°Р»РёРґР°С†РёРё
+  //возвращает объем тестовой выборки для кросс-валидации
   int GetCVTestSize(int FoldOnTest);
-  //РІРѕР·РІСЂР°С‰Р°РµС‚ РѕР±СЉРµРј РѕР±СѓС‡Р°СЋС‰РµР№ РІС‹Р±РѕСЂРєРё
+  //возвращает объем обучающей выборки
   int GetLearnSize();
-  //РІРѕР·РІСЂР°С‰Р°РµС‚ РѕР±СЉРµРј С‚РµСЃС‚РѕРІРѕР№ РІС‹Р±РѕСЂРєРё
+  //возвращает объем тестовой выборки
   int GetTestSize();
-  //Р—Р°РґР°С‚СЊ РѕР±СѓС‡Р°СЋС‰СѓСЋ РІС‹Р±РѕСЂРєСѓ, РєСЂРѕСЃСЃ-РІР°Р»РёРґР°С†РёСЏ
+  //вернуть номер кросс-валидационного разбиения
+  int GetCVFoldNum(int Num);
+  //вернуть число переменных
+  int GetNVars();
+  //вернуть число классов
+  int GetNClasses();
+  //вернуть размер выборки
+  int GetSize();
+
+  int GetClassPerFold(int ClassNum,int FoldNum);
+
+  int GetClassPositions(int ClassNum,int Num);
+
+  int GetNClassInst(int ClassNum);
+  //Задать обучающую выборку, кросс-валидация
   void SetCVLearn(sample &S_CVLearn, int FoldOnTest);
-  //Р—Р°РґР°С‚СЊ С‚РµСЃС‚РѕРІСѓСЋ РІС‹Р±РѕСЂРєСѓ, РєСЂРѕСЃСЃ-РІР°Р»РёРґР°С†РёСЏ
+  //Задать тестовую выборку, кросс-валидация
   void SetCVTest(sample &S_CVTest, int FoldOnTest);
-  //Р—Р°РґР°С‚СЊ РѕР±СѓС‡Р°СЋС‰СѓСЋ РІС‹Р±РѕСЂРєСѓ
+  //Задать обучающую выборку
   void SetLearn(sample& S_Learn);
-  //Р—Р°РґР°С‚СЊ С‚РµСЃС‚РѕРІСѓСЋ РІС‹Р±РѕСЂРєСѓ
+  //Задать тестовую выборку
   void SetTest(sample& S_Test);
-  //РѕР±С‰РёРµ РїР°СЂР°РјРµС‚СЂС‹
-  int Size;         //РѕР±СЉРµРј РІС‹Р±РѕСЂРєРё
-  int NCols;        //РѕР±С‰РµРµ С‡РёСЃР»Рѕ СЃС‚РѕР»Р±С†РѕРІ РІ РІС‹Р±РѕСЂРєРµ
-  int NVars;        //С‡РёСЃР»Рѕ СЃС‚РѕР»Р±С†РѕРІ РІС…РѕРґРЅС‹С… РїР°СЂР°РјРµС‚СЂРѕРІ
-  int NOuts;        //С‡РёСЃР»Рѕ СЃС‚РѕР»Р±С†РѕРІ РІС‹С…РѕРґРЅС‹С… РїР°СЂР°РјРµС‚СЂРѕРІ
-  int ProblemType;  //С‚РёРї Р·Р°РґР°С‡Рё
-  int NFolds;       //С‡РёСЃР»Рѕ С‡Р°СЃС‚РµР№ РїСЂРё РєСЂРѕСЃСЃ-РІР°Р»РёРґР°С†РёРё
-  double SplitRate; //РґРѕР»СЏ РѕР±СѓС‡Р°СЋС‰РµР№ РІС‹Р±РѕСЂРєРё, РЅР°РїСЂРёРјРµСЂ
-                    //0.7 => СЂР°Р·Р±РёРµРЅРёРµ 70/30
-  int LearnSize;    //СЂР°Р·РјРµСЂ РѕР±СѓС‡Р°СЋС‰РµР№ РІС‹Р±РѕСЂРєРё
-  int TestSize;     //СЂР°Р·РјРµСЂ С‚РµСЃС‚РѕРІРѕР№ РІС‹Р±РѕСЂРєРё
+  //нормализация выборки на [0,1]
+  void NormalizeCV_01(int FoldOnTest);
 
-  double** Inputs;  //РІС…РѕРґС‹ Р·Р°РґР°С‡Рё
-  double** Outputs; //РІС‹С…РѕРґС‹ Р·Р°РґР°С‡Рё
-  bool** MissingInputs;    //РјР°СЃСЃРёРІ РїСЂРѕРїСѓС‰РµРЅРЅС‹С… РІС…РѕРґРЅС‹С… Р·РЅР°С‡РµРЅРёР№
-  bool** MissingOutputs;   //РјР°СЃСЃРёРІ РїСЂРѕРїСѓС‰РµРЅРЅС‹С… РІС‹С…РѕРґРЅС‹С… Р·РЅР°С‡РµРЅРёР№
-  int* FoldSize;    //СЂР°Р·РјРµСЂС‹ С‡Р°СЃС‚РµР№, РЅР° РєРѕС‚РѕСЂС‹Рµ СЂР°Р·Р±РёРІР°РµС‚СЃСЏ
-                    //РІС‹Р±РѕСЂРєР° РїСЂРё РєСЂРѕСЃСЃ-РІР°Р»РёРґР°С†РёРё
-  int* CVFoldNum;   //РЅРѕРјРµСЂ С‡Р°СЃС‚Рё, Рє РєРѕС‚РѕСЂРѕР№ РѕС‚РЅРѕСЃРёС‚СЃСЏ РёР·РјРµСЂРµРЅРёРµ
+  //общие параметры
+  int Size;         //объем выборки
+  int NCols;        //общее число столбцов в выборке
+  int NVars;        //число столбцов входных параметров
+  int NOuts;        //число столбцов выходных параметров
+  int ProblemType;  //тип задачи
+  int NFolds;       //число частей при кросс-валидации
+  float SplitRate; //доля обучающей выборки, например
+                    //0.7 => разбиение 70/30
+  int LearnSize;    //размер обучающей выборки
+  int TestSize;     //размер тестовой выборки
 
-  //РїР°СЂР°РјРµС‚СЂС‹ РґР»СЏ Р·Р°РґР°С‡ РєР»Р°СЃСЃРёС„РёРєР°С†РёРё
-  int NClasses;     //С‡РёСЃР»Рѕ РєР»Р°СЃСЃРѕРІ РІ Р·Р°РґР°С‡Рµ
-  int* Classes;     //РјР°СЃСЃРёРІ РЅРѕРјРµСЂРѕРІ РєР»Р°СЃСЃРѕРІ
-  int* NClassInst;  //РєРѕР»РёС‡РµСЃС‚РІРѕ РѕР±СЉРµРєС‚РѕРІ РІ РєР»Р°СЃСЃР°С…
-  int** ClassPositions;  //РќРѕРјРµСЂР° РѕР±СЉРµРєС‚РѕРІ, РїСЂРёРЅР°РґР»РµР¶Р°С‰РёС… СЂР°Р·РЅС‹Рј РєР»Р°СЃСЃР°Рј
-  int** ClassPerFold;    //С‡РёСЃР»Рѕ РѕР±СЉРµРєС‚РѕРІ РєР»Р°СЃСЃРѕРІ РґР»СЏ РєР°Р¶РґРѕР№ С‡Р°СЃС‚Рё
+  float** Inputs;  //входы задачи
+  float** NormInputs; //Нормализованные входы задачи
+  float** Outputs; //выходы задачи
+  bool** MissingInputs;    //массив пропущенных входных значений
+  bool** MissingOutputs;   //массив пропущенных выходных значений
+  int* FoldSize;    //размеры частей, на которые разбивается
+                    //выборка при кросс-валидации
+  int* CVFoldNum;   //номер части, к которой относится измерение
+
+  int* ErrOnMiss;
+  int* HasMiss;
+
+  //параметры для задач классификации
+  int NClasses;     //число классов в задаче
+  int* Classes;     //массив номеров классов
+  int* NClassInst;  //количество объектов в классах
+  int** ClassPositions;  //Номера объектов, принадлежащих разным классам
+  int** ClassPerFold;    //число объектов классов для каждой части
+  float** Range;   //диапазоны переменных для нормализации
+  int* VarType; //Тип переменной - вещественная/категориальная
+
+  int NMisErr;
+  int NNormErr;
 
 };
-
-#endif // SAMPLE_H

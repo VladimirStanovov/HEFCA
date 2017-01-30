@@ -1,6 +1,8 @@
 #include "sample.cpp"
 #include <conio.h>
 
+bool havetosaveerrors = false;
+
 struct Params
 {
     int NumInds;
@@ -163,6 +165,12 @@ void QS(int type, float* &RankMass, float* &NumMass2, Params &PRS)
         qSort(RankMass,NumMass2,0,PRS.NumInds-1);
     else
         qSort(NumMass2,RankMass,0,PRS.NumInds-1);
+}
+float GetMRCat(float X, int FSNum)
+{
+    if(X == FSNum)
+        return 1;
+    return 0;
 }
 float GetMR(float X, int FSNum)
 {
@@ -335,101 +343,27 @@ void InitMRS(float*** &MRS, sample &Samp, Params &PRS)
         MRS[i] = new float*[Samp.GetNVars()];
         for(int j=0;j!=Samp.GetNVars();j++)
         {
-            MRS[i][j] = new float[PRS.NFSets];
-            for(int k=0;k!=PRS.NFSets;k++)
+            if(Samp.VarType[j] == 0)
             {
-                MRS[i][j][k] = GetMR(Samp.GetNormValue(i,j),k);
-                //cout<<MRS[i][j][k]<<"\t";
+                MRS[i][j] = new float[PRS.NFSets];
+                for(int k=0;k!=PRS.NFSets;k++)
+                {
+                    if(!Samp.MissingInputs[i][j])
+                        MRS[i][j][k] = GetMR(Samp.GetNormValue(i,j),k);
+                    else
+                        MRS[i][j][k] = 0;
+                    //cout<<MRS[i][j][k]<<"\t";
+                }
+                //cout<<endl;
             }
-            //cout<<endl;
+            else
+            {
+                MRS[i][j] = new float[PRS.NFSets];
+            }
         }
         //cout<<endl;
     }
 }
-/*void InitMRS2(float*** &MRS1,float*** &MRS2,float*** &MRS3,float*** &MRS4,float*** &MRS5, sample &Samp, Params &PRS)
-{
-    int SampPartSize = Samp.GetSize()/5;
-    MRS1 = new float**[SampPartSize];
-    MRS2 = new float**[SampPartSize];
-    MRS3 = new float**[SampPartSize];
-    MRS4 = new float**[SampPartSize];
-    MRS5 = new float**[SampPartSizes];
-    for(int i=0;i!=SampPartSize;i++)
-    {
-        MRS1[i] = new float*[Samp.GetNVars()];
-        for(int j=0;j!=Samp.GetNVars();j++)
-        {
-            MRS1[i][j] = new float[PRS.NFSets];
-            for(int k=0;k!=PRS.NFSets;k++)
-            {
-                MRS1[i][j][k] = GetMR(Samp.GetNormValue(i,j),k);
-                //cout<<MRS[i][j][k]<<"\t";
-            }
-            //cout<<endl;
-        }
-        //cout<<endl;
-    }
-    for(int i=SampPartSize;i!=SampPartSize*2;i++)
-    {
-        MRS2[i] = new float*[Samp.GetNVars()];
-        for(int j=0;j!=Samp.GetNVars();j++)
-        {
-            MRS2[i][j] = new float[PRS.NFSets];
-            for(int k=0;k!=PRS.NFSets;k++)
-            {
-                MRS2[i][j][k] = GetMR(Samp.GetNormValue(i,j),k);
-                //cout<<MRS[i][j][k]<<"\t";
-            }
-            //cout<<endl;
-        }
-        //cout<<endl;
-    }
-    for(int i=SampPartSize*2;i!=SampPartSize*3;i++)
-    {
-        MRS3[i] = new float*[Samp.GetNVars()];
-        for(int j=0;j!=Samp.GetNVars();j++)
-        {
-            MRS3[i][j] = new float[PRS.NFSets];
-            for(int k=0;k!=PRS.NFSets;k++)
-            {
-                MRS3[i][j][k] = GetMR(Samp.GetNormValue(i,j),k);
-                //cout<<MRS[i][j][k]<<"\t";
-            }
-            //cout<<endl;
-        }
-        //cout<<endl;
-    }
-    for(int i=SampPartSize*3;i!=SampPartSize*4;i++)
-    {
-        MRS4[i] = new float*[Samp.GetNVars()];
-        for(int j=0;j!=Samp.GetNVars();j++)
-        {
-            MRS4[i][j] = new float[PRS.NFSets];
-            for(int k=0;k!=PRS.NFSets;k++)
-            {
-                MRS4[i][j][k] = GetMR(Samp.GetNormValue(i,j),k);
-                //cout<<MRS[i][j][k]<<"\t";
-            }
-            //cout<<endl;
-        }
-        //cout<<endl;
-    }
-    for(int i=SampPartSize*4;i!=SampPartSize*5;i++)
-    {
-        MRS5[i] = new float*[Samp.GetNVars()];
-        for(int j=0;j!=Samp.GetNVars();j++)
-        {
-            MRS5[i][j] = new float[PRS.NFSets];
-            for(int k=0;k!=PRS.NFSets;k++)
-            {
-                MRS5[i][j][k] = GetMR(Samp.GetNormValue(i,j),k);
-                //cout<<MRS[i][j][k]<<"\t";
-            }
-            //cout<<endl;
-        }
-        //cout<<endl;
-    }
-}*/
 void SetAllInst(sample &Samp,Params &PRS, int &NumInst, int* &InstUsed, int* &Inst, int* &InstClass,
                       int &FoldOnTest, int** &CanBeUsedNums, int* &counterClass, int& CVLearnSize)
 {
@@ -723,19 +657,28 @@ void GenerateRB(int Num, Params &PRS, int NumInst, int* Inst, int*** &Popul, flo
         for(int i=0;i!=Samp.NVars;i++)
         {
             Popul[Num][k][i] = 0;
-            if(Random(0,1) > PRS.PDC )
+            if(!Samp.MissingInputs[RandomPattern][i])
             {
-                SummOR=PRS.NPartitions;                               //Depends on NFSets!
-                RandomPoint = Random(0,SummOR);
-                do
+                if(Random(0,1) > PRS.PDC )
                 {
-                    Popul[Num][k][i]++;
-                    //SummOR-=LORS[RandomPattern][i][Popul[Num][k][i]];
-                    SummOR-=MRS[Inst[RandomPattern]][i][Popul[Num][k][i]];
-                } while(SummOR > RandomPoint && Popul[Num][k][i] != 14);
-
+                    if(Samp.VarType[i] == 0)
+                    {
+                        SummOR=PRS.NPartitions;                               //Depends on NFSets!
+                        RandomPoint = Random(0,SummOR);
+                        do
+                        {
+                            Popul[Num][k][i]++;
+                            //SummOR-=LORS[RandomPattern][i][Popul[Num][k][i]];
+                            SummOR-=MRS[Inst[RandomPattern]][i][Popul[Num][k][i]];
+                        } while(SummOR > RandomPoint && Popul[Num][k][i] != 14);
+                    }
+                    else
+                    {
+                        Popul[Num][k][i] = IntRandom(Samp.Range[i][0])+1;
+                    }
+                }
+                //cout<<Popul[Num][k][i]<<" ";
             }
-            //cout<<Popul[Num][k][i]<<" ";
         }
         //cout<<"\t";
         //cout<<endl;
@@ -777,9 +720,21 @@ void CFClassRUPD(int Num,int k, Params &PRS, int NumInst, int* Inst, int*** &Pop
             {
                 if(Popul[Num][k][j] > 0)
                 {
-                    DCRule = false;
                     //tempConf *= LORS[i][j][Popul[Num][k][j]];
-                    tempConf *= MRS[Inst[i]][j][Popul[Num][k][j]];
+                    if(!Samp.MissingInputs[Inst[i]][j])
+                    {
+
+                        if(Samp.VarType[j] == 0)
+                        {
+                            DCRule = false;
+                            tempConf *= MRS[Inst[i]][j][Popul[Num][k][j]];
+                        }
+                        else
+                        {
+                            DCRule = false;
+                            tempConf *= GetMRCat(Samp.GetValue(Inst[i],j),Popul[Num][k][j]);
+                        }
+                    }
                 }
             }
             if(DCRule == true)
@@ -891,9 +846,22 @@ void CFClassRB(int Num, sample &Samp, Params &PRS, float** &RUPD, int*** &Popul,
                     {
                         if(Popul[Num][k][j] > 0)
                         {
-                            DCRule = false;
-                            //tempConf *= LORS[i][j][Popul[Num][k][j]];
-                            tempConf *= MRS[Inst[i]][j][Popul[Num][k][j]];
+                            if(!Samp.MissingInputs[Inst[i]][j])
+                            {
+                                //DCRule = false;
+                                //tempConf *= LORS[i][j][Popul[Num][k][j]];
+                                //tempConf *= MRS[Inst[i]][j][Popul[Num][k][j]];
+                                if(Samp.VarType[j] == 0)
+                                {
+                                    DCRule = false;
+                                    tempConf *= MRS[Inst[i]][j][Popul[Num][k][j]];
+                                }
+                                else
+                                {
+                                    DCRule = false;
+                                    tempConf *= GetMRCat(Samp.GetValue(Inst[i],j),Popul[Num][k][j]);
+                                }
+                            }
                         }
                     }
                     if(DCRule == true)
@@ -978,8 +946,41 @@ void CFClassRB(int Num, sample &Samp, Params &PRS, float** &RUPD, int*** &Popul,
 void FitCalc(int Num, sample &Samp, float** &ErrorClass, float** &ConfMatrix, int NumInst, Params &PRS,
              float** &PopulCF, float*** &PopulMu, float** &PopulClass,int* &CurNumRules,
              float* &CurRLength, float* &ErrMass, float* &AveMass, float* &FitMass, float* &NumClassInst,
-             int*** &Popul, int* &Inst, int ChangeInst, int* &InstUsed, int* &InstClass,float*** &MRS)
+             int*** &Popul, int* &Inst, int ChangeInst, int* &InstUsed, int* &InstClass, float** &RUPD,
+             float*** &MRS, float* &ClassConf)
 {
+    for(int i=0;i!=PRS.MaxNRules;i++)
+    {
+        if(PopulClass[Num][i] >= 0)
+        {
+            CurNumRules[Num]++;
+            for(int j=0;j!=Samp.NVars;j++)
+            {
+                if(Popul[Num][i][j] > 0)
+                {
+                    CurRLength[Num]++;
+                }
+                //cout<<Popul[Num][i][j]<<" ";
+            }
+            //cout<<"-> "<<PopulClass[Num][i]<<" "<<(PopulCF[Num][i])<<endl;
+        }
+    }
+
+    if(CurNumRules[Num] == 0)
+    {
+            PRS.HasGoodRules=false;
+            do
+            {
+                GenerateRB(Num,PRS,NumInst,Inst,Popul,RUPD,MRS,Samp);
+                CFClassRB(Num,Samp,PRS,RUPD,Popul,ClassConf,PopulMu,MRS,PopulClass,PopulCF,NumInst,Inst,InstClass);
+
+            } while(PRS.HasGoodRules == false); //HasGoodRules == false &&
+        for(int i=0;i!=PRS.MaxNRules;i++)
+        {
+            //cout<<PopulClass[Num][i]<<"\t";
+        }
+        //cout<<endl;
+    }
     if(ChangeInst == 1)
         for(int i=0;i!=NumInst;i++)
         {
@@ -1024,9 +1025,22 @@ void FitCalc(int Num, sample &Samp, float** &ErrorClass, float** &ConfMatrix, in
                 {
                     if(Popul[Num][k][j] > 0)
                     {
-                        DCRule = false;
-                        //tempConf *= LORS[i][j][Popul[Num][k][j]];
-                        tempConf *= MRS[Inst[i]][j][Popul[Num][k][j]];
+                        if(!Samp.MissingInputs[Inst[i]][j])
+                        {
+                            //DCRule = false;
+                            //tempConf *= LORS[i][j][Popul[Num][k][j]];
+                            //tempConf *= MRS[Inst[i]][j][Popul[Num][k][j]];
+                            if(Samp.VarType[j] == 0)
+                            {
+                                DCRule = false;
+                                tempConf *= MRS[Inst[i]][j][Popul[Num][k][j]];
+                            }
+                            else
+                            {
+                                DCRule = false;
+                                tempConf *= GetMRCat(Samp.GetValue(Inst[i],j),Popul[Num][k][j]);
+                            }
+                        }
                     }
                 }
                 if(DCRule == true)
@@ -1108,6 +1122,47 @@ void FitCalc(int Num, sample &Samp, float** &ErrorClass, float** &ConfMatrix, in
             //cout<<"-> "<<PopulClass[Num][i]<<" "<<(PopulCF[Num][i])<<endl;
         }
     }
+
+    if(CurNumRules[Num] == 0)
+    {
+            PRS.HasGoodRules=false;
+            do
+            {
+                GenerateRB(Num,PRS,NumInst,Inst,Popul,RUPD,MRS,Samp);
+                CFClassRB(Num,Samp,PRS,RUPD,Popul,ClassConf,PopulMu,MRS,PopulClass,PopulCF,NumInst,Inst,InstClass);
+
+            } while(PRS.HasGoodRules == false); //HasGoodRules == false &&
+        for(int i=0;i!=PRS.MaxNRules;i++)
+        {
+            //cout<<PopulClass[Num][i]<<"\t";
+        }
+        //cout<<endl;
+    }
+
+        float Precision_M = 0;
+        float Recall_M = 0;
+        float Fscore_M = 0;
+        float betta = 1;
+        for(int i=0;i!=Samp.NClasses;i++)
+        {
+            float FP = 0;
+            float FN = 0;
+            for(int j=0;j!=Samp.NClasses;j++)
+            {
+                FP+=ConfMatrix[j][i];
+                FN+=ConfMatrix[i][j];
+            }
+            FN+=ConfMatrix[i][Samp.NClasses];
+            if(FP != 0)
+                Precision_M += ConfMatrix[i][i] / FP / Samp.NClasses;
+            else
+                Precision_M += 0;
+            Recall_M += ConfMatrix[i][i] / FN / Samp.NClasses;
+        }
+        Fscore_M = 1.-((betta*betta + 1)*Precision_M*Recall_M)/(betta*betta*Precision_M+Recall_M);
+        if(Precision_M == 0 && Recall_M == 0)
+            Fscore_M = 1.0;
+
     if(CurNumRules[Num] != 0)
         CurRLength[Num] /= CurNumRules[Num];
     else
@@ -1122,8 +1177,9 @@ void FitCalc(int Num, sample &Samp, float** &ErrorClass, float** &ConfMatrix, in
     for(int i=0;i!=Samp.NClasses;i++)
     {
         ErrorClass[Num][i] /= InstClass[i];
-        AveMass[Num] += ErrorClass[Num][i]/(float)Samp.NClasses;
+        //AveMass[Num] += ErrorClass[Num][i]/(float)Samp.NClasses;
     }
+    AveMass[Num] = Fscore_M;
     if(PRS.CritType == 0)
         FitMass[Num] = Error/NumInst*10000 + 1*CurNumRules[Num] + 1*CurNumRules[Num]*CurRLength[Num];
     else
@@ -1278,10 +1334,10 @@ void Init(sample &Samp,Params &PRS, float* &RuleClassified,
     }
     BestClasses = new float[PRS.MaxNRules];
     BestCF = new float[PRS.MaxNRules];
-    BestMu = new float*[PRS.MaxNRules];
+    //BestMu = new float*[PRS.MaxNRules];
     for(int i=0;i!=PRS.MaxNRules;i++)
     {
-        BestMu[i] = new float[CVLearnSize];
+        //BestMu[i] = new float[CVLearnSize];
     }
     GoodRNums = new int*[PRS.NumInds*2];
     for(int i=0;i!=PRS.NumInds*2;i++)
@@ -1334,7 +1390,7 @@ void Init(sample &Samp,Params &PRS, float* &RuleClassified,
 
             } while(PRS.HasGoodRules == false); //HasGoodRules == false &&
             FitCalc(i,Samp,ErrorClass,ConfMatrix,NumInst,PRS,PopulCF,PopulMu,PopulClass,CurNumRules,CurRLength,ErrMass,
-                    AveMass,FitMass,NumClassInst,Popul,Inst,0,InstUsed,InstClass,MRS);
+                    AveMass,FitMass,NumClassInst,Popul,Inst,0,InstUsed,InstClass,RUPD,MRS,ClassConf);
             //cout<<ErrMass[i]<<endl;
         }
     }
@@ -1397,10 +1453,10 @@ void Clean(sample &Samp,Params &PRS, float* &RuleClassified,
     for(int i=0;i!=PRS.MaxNRules;i++)
     {
         delete BestInd[i];
-        delete BestMu[i];
+        //delete BestMu[i];
     }
     delete BestInd;
-    delete BestMu;
+    //delete BestMu;
     delete BestCF;
     delete BestClasses;
     for(int i=0;i!=PRS.NumInds*2;i++)
@@ -1765,9 +1821,16 @@ void PittsMutation(int Num, Params &PRS, float** &PopulClass,int*** &Popul,float
                 {
                     if(Random(0,1) < 1./(float)CurNumRules[Num]/(int)PRS.NVars/3.)
                     {
-                        Popul[Num][k][L] = IntRandom(PRS.NFSets);
-                        RUPD[Num][k] = 0;
-                        CFClassRUPD(Num,k,PRS,NumInst,Inst,Popul,RUPD,MRS,Samp,ClassConf,PopulMu,PopulClass,PopulCF,InstClass);
+                        if(Samp.VarType[L] == 0)
+                        {
+                            Popul[Num][k][L] = IntRandom(PRS.NFSets);
+                            RUPD[Num][k] = 0;
+                            CFClassRUPD(Num,k,PRS,NumInst,Inst,Popul,RUPD,MRS,Samp,ClassConf,PopulMu,PopulClass,PopulCF,InstClass);
+                        }
+                        else
+                        {
+                            Popul[Num][k][L] = IntRandom(Samp.Range[L][0])+1;
+                        }
                     }
                 }
             }
@@ -1783,9 +1846,16 @@ void PittsMutation(int Num, Params &PRS, float** &PopulClass,int*** &Popul,float
                 {
                     if(Random(0,1) < 1./(float)CurNumRules[Num]/(int)PRS.NVars)
                     {
-                        Popul[Num][k][L] = IntRandom(PRS.NFSets);
-                        RUPD[Num][k] = 0;
-                        CFClassRUPD(Num,k,PRS,NumInst,Inst,Popul,RUPD,MRS,Samp,ClassConf,PopulMu,PopulClass,PopulCF,InstClass);
+                        if(Samp.VarType[L] == 0)
+                        {
+                            Popul[Num][k][L] = IntRandom(PRS.NFSets);
+                            RUPD[Num][k] = 0;
+                            CFClassRUPD(Num,k,PRS,NumInst,Inst,Popul,RUPD,MRS,Samp,ClassConf,PopulMu,PopulClass,PopulCF,InstClass);
+                        }
+                        else
+                        {
+                            Popul[Num][k][L] = IntRandom(Samp.Range[L][0])+1;
+                        }
                     }
                 }
             }
@@ -1801,9 +1871,16 @@ void PittsMutation(int Num, Params &PRS, float** &PopulClass,int*** &Popul,float
                 {
                     if(Random(0,1) < 3./(float)CurNumRules[Num]/(int)PRS.NVars)
                     {
-                        Popul[Num][k][L] = IntRandom(PRS.NFSets);
-                        RUPD[Num][k] = 0;
-                        CFClassRUPD(Num,k,PRS,NumInst,Inst,Popul,RUPD,MRS,Samp,ClassConf,PopulMu,PopulClass,PopulCF,InstClass);
+                        if(Samp.VarType[L] == 0)
+                        {
+                            Popul[Num][k][L] = IntRandom(PRS.NFSets);
+                            RUPD[Num][k] = 0;
+                            CFClassRUPD(Num,k,PRS,NumInst,Inst,Popul,RUPD,MRS,Samp,ClassConf,PopulMu,PopulClass,PopulCF,InstClass);
+                        }
+                        else
+                        {
+                            Popul[Num][k][L] = IntRandom(Samp.Range[L][0])+1;
+                        }
                     }
                 }
             }
@@ -1877,9 +1954,18 @@ void MichOperators(int Num, Params &PRS,float** &PopulClass,int* &CurNumRules,  
     {
         if(Random(0,1) < 1./(float)PRS.NVars)
         {
-            Popul[Num][NewRulePlace][L] = IntRandom(PRS.NFSets);
-            RUPD[Num][NewRulePlace] = 0;
-            CFClassRUPD(Num,NewRulePlace,PRS,NumInst,Inst,Popul,RUPD,MRS,Samp,ClassConf,PopulMu,PopulClass,PopulCF,InstClass);
+            if(Samp.VarType[L] == 0)
+            {
+                Popul[Num][NewRulePlace][L] = IntRandom(PRS.NFSets);
+                RUPD[Num][NewRulePlace] = 0;
+                CFClassRUPD(Num,NewRulePlace,PRS,NumInst,Inst,Popul,RUPD,MRS,Samp,ClassConf,PopulMu,PopulClass,PopulCF,InstClass);
+            }
+            else
+            {
+                Popul[Num][NewRulePlace][L] = IntRandom(Samp.Range[L][0])+1;
+                RUPD[Num][NewRulePlace] = 0;
+                CFClassRUPD(Num,NewRulePlace,PRS,NumInst,Inst,Popul,RUPD,MRS,Samp,ClassConf,PopulMu,PopulClass,PopulCF,InstClass);
+            }
         }
     }
 }
@@ -1903,18 +1989,37 @@ void HeuristicRG(int Num, Params &PRS, int*** &Popul,float** &RUPD,int NumInst, 
     for(int i=0;i!=PRS.NVars;i++)
     {
         Popul[Num][NewRulePlace][i] = 0;
-        if(Random(0,1) > PRS.PDC )
+        if(!Samp.MissingInputs[RandomPattern][i])
         {
-            SummOR=PRS.NPartitions;                               //Depends on NFSets!
-            RandomPoint = Random(0,SummOR);
-            do
+            if(Random(0,1) > PRS.PDC )
             {
-                Popul[Num][NewRulePlace][i]++;
-                //SummOR-=LORS[RandomPattern][i][Popul[Num][NewRulePlace][i]];
-                SummOR-=MRS[Inst[RandomPattern]][i][Popul[Num][NewRulePlace][i]];
-            } while(SummOR > RandomPoint && Popul[Num][NewRulePlace][i] != 14);
+                /*SummOR=PRS.NPartitions;                               //Depends on NFSets!
+                RandomPoint = Random(0,SummOR);
+                do
+                {
+                    Popul[Num][NewRulePlace][i]++;
+                    //SummOR-=LORS[RandomPattern][i][Popul[Num][NewRulePlace][i]];
+                    SummOR-=MRS[Inst[RandomPattern]][i][Popul[Num][NewRulePlace][i]];
+                } while(SummOR > RandomPoint && Popul[Num][NewRulePlace][i] != 14);*/
+
+                if(Samp.VarType[i] == 0)
+                {
+                    SummOR=PRS.NPartitions;                               //Depends on NFSets!
+                    RandomPoint = Random(0,SummOR);
+                    do
+                    {
+                        Popul[Num][NewRulePlace][i]++;
+                        //SummOR-=LORS[RandomPattern][i][Popul[Num][NewRulePlace][i]];
+                        SummOR-=MRS[Inst[RandomPattern]][i][Popul[Num][NewRulePlace][i]];
+                    } while(SummOR > RandomPoint && Popul[Num][NewRulePlace][i] != 14);
+                }
+                else
+                {
+                    Popul[Num][NewRulePlace][i] = IntRandom(Samp.Range[i][0])+1;
+                }
+            }
+            //cout<<Popul[Num][k][i]<<" ";
         }
-        //cout<<Popul[Num][k][i]<<" ";
     }
     RUPD[Num][NewRulePlace] = 0;
     CFClassRUPD(Num,NewRulePlace,PRS,NumInst,Inst,Popul,RUPD,MRS,Samp,ClassConf,PopulMu,PopulClass,PopulCF,InstClass);
@@ -1959,9 +2064,22 @@ void MichiganPart(int Num, Params &PRS,float** &PopulClass, int*** &Popul,int* &
                     {
                         if(Popul[Num][k][j] > 0)
                         {
-                            DCRule = false;
-                            //tempConf *= LORS[i][j][Popul[Num][k][j]];
-                            tempConf *= MRS[Inst[i]][j][Popul[Num][k][j]];
+                            if(!Samp.MissingInputs[Inst[i]][j])
+                            {
+                                //DCRule = false;
+                                //tempConf *= LORS[i][j][Popul[Num][k][j]];
+                                //tempConf *= MRS[Inst[i]][j][Popul[Num][k][j]];
+                                if(Samp.VarType[j] == 0)
+                                {
+                                    DCRule = false;
+                                    tempConf *= MRS[Inst[i]][j][Popul[Num][k][j]];
+                                }
+                                else
+                                {
+                                    DCRule = false;
+                                    tempConf *= GetMRCat(Samp.GetValue(Inst[i],j),Popul[Num][k][j]);
+                                }
+                            }
                         }
                     }
                     if(DCRule == true)
@@ -2148,9 +2266,22 @@ void MichiganPart(int Num, Params &PRS,float** &PopulClass, int*** &Popul,int* &
                     {
                         if(Popul[Num][k][j] > 0)
                         {
-                            DCRule = false;
-                            //tempConf *= LORS[i][j][Popul[Num][k][j]];
-                            tempConf *= MRS[Inst[i]][j][Popul[Num][k][j]];
+                            if(!Samp.MissingInputs[Inst[i]][j])
+                            {
+                                //DCRule = false;
+                                //tempConf *= LORS[i][j][Popul[Num][k][j]];
+                                //tempConf *= MRS[Inst[i]][j][Popul[Num][k][j]];
+                                if(Samp.VarType[j] == 0)
+                                {
+                                    DCRule = false;
+                                    tempConf *= MRS[Inst[i]][j][Popul[Num][k][j]];
+                                }
+                                else
+                                {
+                                    DCRule = false;
+                                    tempConf *= GetMRCat(Samp.GetValue(Inst[i],j),Popul[Num][k][j]);
+                                }
+                            }
                         }
                     }
                     if(DCRule == true)
@@ -2280,6 +2411,7 @@ void LearnErrorCalc(sample &Samp, Params &PRS, float* &NumClassInst, int** &Over
     //float CurConf=0;
     //float MaxConf=0;
     //float savedOverBestMu;
+    ofstream fouterrnums("ErrNums.txt",ios::app);
     float tempConf=0;
     int maxnum=0;
     bool DCRule=false;
@@ -2311,9 +2443,22 @@ void LearnErrorCalc(sample &Samp, Params &PRS, float* &NumClassInst, int** &Over
             {
                 if(OverBestInd[k][j] > 0)
                 {
-                    DCRule = false;
-                    //tempConf *= TORS[i][j][Popul[Num][k][j]];
-                    tempConf *= MRS[InstNums[i]][j][OverBestInd[k][j]];
+                    if(!Samp.MissingInputs[InstNums[i]][j])
+                    {
+                        //DCRule = false;
+                        //tempConf *= TORS[i][j][Popul[Num][k][j]];
+                        //tempConf *= MRS[InstNums[i]][j][OverBestInd[k][j]];
+                        if(Samp.VarType[j] == 0)
+                        {
+                            DCRule = false;
+                            tempConf *= MRS[InstNums[i]][j][OverBestInd[k][j]];
+                        }
+                        else
+                        {
+                            DCRule = false;
+                            tempConf *= GetMRCat(Samp.GetValue(InstNums[i],j),OverBestInd[k][j]);
+                        }
+                    }
                 }
             }
             if(DCRule == true)
@@ -2361,6 +2506,11 @@ void LearnErrorCalc(sample &Samp, Params &PRS, float* &NumClassInst, int** &Over
             {
                 //cout<<InstNums[i]<<" ";
                 Error++;
+                if(havetosaveerrors)
+                {
+                    Samp.ErrOnMiss[InstNums[i]] = 1;
+                    //fouterrnums<<InstNums[i]<<"\t";
+                }
                 OverErrorClass[ Samp.Classes[InstNums[i]] ] ++;
             }
             ConfMatrix[ Samp.Classes[InstNums[i]] ][ (int)OverBestClasses[maxnum] ] ++;
@@ -2369,6 +2519,11 @@ void LearnErrorCalc(sample &Samp, Params &PRS, float* &NumClassInst, int** &Over
         {
             //cout<<InstNums[i]<<" ";
             Error++;
+            if(havetosaveerrors)
+            {
+                Samp.ErrOnMiss[InstNums[i]] = 1;
+                //fouterrnums<<InstNums[i]<<"\t";
+            }
             OverErrorClass[ Samp.Classes[InstNums[i]] ] ++;
             ConfMatrix[ Samp.Classes[InstNums[i]] ][ Samp.NClasses ] ++;
         }
@@ -2400,13 +2555,38 @@ void LearnErrorCalc(sample &Samp, Params &PRS, float* &NumClassInst, int** &Over
         CurRLength = -1;
     //ErrMass[0] = Error;
     //AveMass[0]=0;
+        float Precision_M = 0;
+        float Recall_M = 0;
+        float Fscore_M = 0;
+        float betta = 1;
+        for(int i=0;i!=Samp.NClasses;i++)
+        {
+            float FP = 0;
+            float FN = 0;
+            for(int j=0;j!=Samp.NClasses;j++)
+            {
+                FP+=ConfMatrix[j][i];
+                FN+=ConfMatrix[i][j];
+            }
+            FN+=ConfMatrix[i][Samp.NClasses];
+            if(FP != 0)
+                Precision_M += ConfMatrix[i][i] / FP / Samp.NClasses;
+            else
+                Precision_M += 0;
+            Recall_M += ConfMatrix[i][i] / FN / Samp.NClasses;
+        }
+        Fscore_M = 1.-((betta*betta + 1)*Precision_M*Recall_M)/(betta*betta*Precision_M+Recall_M);
+        if(Precision_M == 0 && Recall_M == 0)
+            Fscore_M = 1.0;
+
     OverBestAve = 0;
     OverBestError = Error;
     for(int i=0;i!=Samp.NClasses;i++)
     {
         OverErrorClass[i] /= InstClass[i];
-        OverBestAve += OverErrorClass[i]/(float)Samp.NClasses;
+        //OverBestAve += OverErrorClass[i]/(float)Samp.NClasses;
     }
+    OverBestAve = Fscore_M;
     delete InstNums;
     //if(PRS.CritType == 0)
         //FitMass[0] = Error/NumInst*10000 + 1*CurNumRules[0] + 1*CurNumRules[0]*CurRLength[0];
@@ -2421,6 +2601,7 @@ void TestErrorCalc(sample &Samp, Params &PRS, float* &NumClassInst, int** &OverB
 {
     //float CurConf=0;
     //float MaxConf=0;
+    ofstream fouterrnums("ErrNums.txt",ios::app);
     float tempConf=0;
     int maxnum=0;
     bool DCRule=false;
@@ -2454,9 +2635,22 @@ void TestErrorCalc(sample &Samp, Params &PRS, float* &NumClassInst, int** &OverB
             {
                 if(OverBestInd[k][j] > 0)
                 {
-                    DCRule = false;
-                    //tempConf *= TORS[i][j][Popul[Num][k][j]];
-                    tempConf *= MRS[InstNums[i]][j][OverBestInd[k][j]];
+                    if(!Samp.MissingInputs[InstNums[i]][j])
+                    {
+                        //DCRule = false;
+                        //tempConf *= TORS[i][j][Popul[Num][k][j]];
+                        //tempConf *= MRS[InstNums[i]][j][OverBestInd[k][j]];
+                        if(Samp.VarType[j] == 0)
+                        {
+                            DCRule = false;
+                            tempConf *= MRS[InstNums[i]][j][OverBestInd[k][j]];
+                        }
+                        else
+                        {
+                            DCRule = false;
+                            tempConf *= GetMRCat(Samp.GetValue(InstNums[i],j),OverBestInd[k][j]);
+                        }
+                    }
                 }
             }
             if(DCRule == true)
@@ -2501,6 +2695,11 @@ void TestErrorCalc(sample &Samp, Params &PRS, float* &NumClassInst, int** &OverB
             if(OverBestClasses[maxnum] != Samp.Classes[InstNums[i]])
             {
                 Error++;
+                if(havetosaveerrors)
+                {
+                    Samp.ErrOnMiss[InstNums[i]] = 1;
+                    //fouterrnums<<InstNums[i]<<"\t";
+                }
                 OverErrorClass[ Samp.Classes[InstNums[i]] ] ++;
             }
             ConfMatrixTest[ Samp.Classes[InstNums[i]] ][ (int)OverBestClasses[maxnum] ] ++;
@@ -2508,6 +2707,11 @@ void TestErrorCalc(sample &Samp, Params &PRS, float* &NumClassInst, int** &OverB
         else
         {
             Error++;
+            if(havetosaveerrors)
+            {
+                Samp.ErrOnMiss[InstNums[i]] = 1;
+                //fouterrnums<<InstNums[i]<<"\t";
+            }
             OverErrorClass[ Samp.Classes[InstNums[i]] ] ++;
             ConfMatrixTest[ Samp.Classes[InstNums[i]] ][ Samp.NClasses ] ++;
         }
@@ -2538,14 +2742,41 @@ void TestErrorCalc(sample &Samp, Params &PRS, float* &NumClassInst, int** &OverB
         CurRLength = -1;
     //ErrMass[0] = Error;
     //AveMass[0]=0;
+        float Precision_M = 0;
+        float Recall_M = 0;
+        float Fscore_M = 0;
+        float betta = 1;
+        for(int i=0;i!=Samp.NClasses;i++)
+        {
+            float FP = 0;
+            float FN = 0;
+            for(int j=0;j!=Samp.NClasses;j++)
+            {
+                FP+=ConfMatrixTest[j][i];
+                FN+=ConfMatrixTest[i][j];
+            }
+            FN+=ConfMatrixTest[i][Samp.NClasses];
+            if(FP != 0)
+                Precision_M += ConfMatrixTest[i][i] / FP / Samp.NClasses;
+            else
+                Precision_M += 0;
+            Recall_M += ConfMatrixTest[i][i] / FN / Samp.NClasses;
+        }
+        Fscore_M = 1.-((betta*betta + 1)*Precision_M*Recall_M)/(betta*betta*Precision_M+Recall_M);
+        if(Precision_M == 0 && Recall_M == 0)
+            Fscore_M = 1.0;
+
     OverBestAve = 0;
     OverBestError = Error;
     for(int i=0;i!=Samp.NClasses;i++)
     {
         OverErrorClass[i] /= InstClass[i];
-        OverBestAve += OverErrorClass[i]/(float)Samp.NClasses;
+        //OverBestAve += OverErrorClass[i]/(float)Samp.NClasses;
     }
+    OverBestAve = Fscore_M;
     delete InstNums;
+    //if(havetosaveerrors)
+      //  fouterrnums<<endl;
     //if(PRS.CritType == 0)
         //FitMass[0] = Error/NumInst*10000 + 1*CurNumRules[0] + 1*CurNumRules[0]*CurRLength[0];
     //else
@@ -2759,7 +2990,7 @@ void FindNSaveBest(bool HasBestFit,Params &PRS, float* &NumMass,float* &FitMassC
     }
     CFClassRB(1,Samp,PRS,RUPD,Popul,ClassConf,PopulMu,MRS,PopulClass,PopulCF,NumInst,Inst,InstClass);
     FitCalc(1,Samp,ErrorClass,ConfMatrix,NumInst,PRS,PopulCF,PopulMu,PopulClass,CurNumRules,CurRLength,ErrMass,AveMass,
-            FitMass,NumClassInst,Popul,Inst,0,InstUsed,InstClass,MRS);
+            FitMass,NumClassInst,Popul,Inst,0,InstUsed,InstClass,RUPD,MRS,ClassConf);
 }
 void CreateNewPopul(int Gen,Params &PRS,sample &Samp, float* &RuleClassified,
     float* &RuleP,    float* &tempRuleC,    float* &BadRNums,    int* &MisClassifiedNums,    int* &RandomNumbers,
@@ -2984,7 +3215,7 @@ void CreateNewPopul(int Gen,Params &PRS,sample &Samp, float* &RuleClassified,
         MichiganPart(i+PRS.NumInds,PRS,PopulClass,Popul,CurNumRules,Samp,RuleClassified,NumInst,Inst,PopulMu,
                      PopulCF,MisClassifiedNums,BadRNums,GoodRNums,tempRuleC,RUPD,MRS,ClassConf,CurRLength,RandomNumbers,InstClass);
         FitCalc(PRS.NumInds+i,Samp,ErrorClass,ConfMatrix,NumInst,PRS,PopulCF,PopulMu,PopulClass,CurNumRules,CurRLength,
-                ErrMass,AveMass,FitMass,NumClassInst,Popul,Inst,0,InstUsed,InstClass,MRS);
+                ErrMass,AveMass,FitMass,NumClassInst,Popul,Inst,0,InstUsed,InstClass,RUPD,MRS,ClassConf);
 
         if(PRS.SADJ == 1)
         {
